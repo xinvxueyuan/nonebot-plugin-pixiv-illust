@@ -1,0 +1,77 @@
+[project]
+name = "nonebot-plugin-pixiv-illust"
+version = "0.1.0"
+description = "pixiv 插画/漫画订阅推送插件：按群订阅画师新作、多页推送、R18 可打码"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "nonebot2>=2.5.0",
+    "nonebot-adapter-onebot>=2.4.0",
+    "nonebot-plugin-apscheduler>=0.5.0",
+    "nonebot-plugin-localstore>=0.7.4",
+    "nonebot-plugin-htmlkit>=0.1.0rc5",
+    "pixivpy3>=3.7.5",
+    "httpx>=0.28.0",
+    "pillow>=12.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.6.0",
+    # 表态库（nonebot-plugin-message-reaction）走 alconna uniseg 发表情，
+    # 所以「表态接线」的集成测试需要它。库本身是**可选依赖**（宿主以 git 子模块提供，
+    # 不在 PyPI，所以不能写进 [project.optional-dependencies] —— 那会让 uv lock 去 PyPI 找它而失败）。
+    "nonebot-plugin-alconna>=0.56.0",
+]
+
+[tool.nonebot]
+plugin_dirs = ["src/plugins"]
+adapters = [
+    { name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" },
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+pythonpath = ["src/plugins"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+# ⚠️ 必须显式写 select：本机 ruff 0.16.9 在没写 select 时会**启用全部规则**，
+# 连 B008（NoneBot 惯用法）、BLE001（刻意兜底）这种都会报，`ruff check` 永远无法全绿。
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+    "RUF",  # ruff 自有规则
+]
+ignore = [
+    # NoneBot 的 CommandArg() / Depends() 就是写在函数参数默认值里的，
+    # 这是框架惯用法，不是 B008 针对的「可变默认值陷阱」。
+    "B008",
+    # 中文注释/文档字符串里的全角标点（，（）：「」）不是「歧义字符」，是本项目的书写语言。
+    "RUF001",
+    "RUF002",
+    "RUF003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# 测试里刻意有未使用的变量、刻意用简单写法，宽松处理
+"tests/**" = ["RUF059", "SIM"]
+# 插件入口必须**先** require() 再 import 子模块（NoneBot 的依赖声明硬规矩），
+# 所以 `require(...)` 之后的 import 必然不是文件顶部的 import → 必须放行 E402。
+"src/plugins/nonebot_plugin_pixiv_illust/__init__.py" = ["E402"]
+
+[tool.uv]
+package = false
