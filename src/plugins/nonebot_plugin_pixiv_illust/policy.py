@@ -5,7 +5,7 @@
   - `is_group_allowed`               → 「插件在哪些群生效」
 
 插画/漫画没有「全文」概念，所以小说插件里的「渠道轴 / R18 全文轴」
-（`decide_text_delivery`）在本插件**不存在** —— 不要照搬回来。
+（那条「全文投递决策」函数）在本插件**不存在** —— 不要照搬回来。
 """
 
 from __future__ import annotations
