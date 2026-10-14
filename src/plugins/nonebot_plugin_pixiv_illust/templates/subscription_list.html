@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  /* CJK 字体必须在 CSS 里显式指定：template_to_pic 没有 font_name 参数（§1.9） */
+  body { font-family: "Noto Sans CJK SC", "WenQuanYi Zen Hei", "Noto Sans", sans-serif;
+         margin: 0; padding: 20px; background: #f6f7f9; }
+
+  /* ⚠️ 尺寸要**显式给宽**：图片宽度由内容固有宽度决定，内容窄 → 图窄 → 在 QQ 里就是小图。
+     `dpi` 对输出像素没有影响（实测 96/144/192 结果一样）；`max_width` 是**上限**而非缩放器，
+     给不够会触发 refit 把内容压扁、文字冲出卡片，所以它要和这里的宽度配套
+     （render.py 的 max_width=860 ≥ 卡片 790 + body padding 40）。 */
+  .card { width: 790px; box-sizing: border-box;
+          background: #ffffff; border-radius: 16px; padding: 26px 30px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+
+  .title { font-size: 32px; font-weight: bold; color: #1f2937; margin: 0 0 6px 0; }
+  .sub { font-size: 21px; color: #6b7280; margin: 0 0 20px 0; }
+
+  /* ⚠️ 用 margin 做间距，**不要用 flex 的 `gap`**：
+     实测本渲染器（htmlkit 原生 core.pyd，不是真 Chromium）**不支持 `gap`** ——
+     `gap: 10px` 时头像紧贴序号块（头像起点 52 = 序号块右缘），
+     改用 margin 后头像起点变成 64，间距才真的出现。
+     「头像与右侧元素粘在一起」就是这个原因。 */
+  .row { display: flex; align-items: center;
+         padding: 16px 0; border-bottom: 1px solid #f0f0f0;
+         font-size: 22px; color: #111827; }
+
+  .idx { color: #9ca3af; min-width: 36px; margin-right: 14px; }
+  /* 序号与头像垂直居中：渲染器对 align-items 支持不稳，显式给行高兜底 */
+  .idx, .meta { line-height: 1.3; }
+
+  .avatar { width: 76px; height: 76px; border-radius: 50%;
+            object-fit: cover; flex: 0 0 76px;
+            margin-right: 22px; }
+  /* 无头像时的首字占位块 */
+  .avatar.ph { display: inline-block; line-height: 76px; text-align: center;
+               background: #e5e7eb; color: #6b7280;
+               font-size: 32px; font-weight: bold; }
+
+  /* .meta 内部也用 margin 排间距（同样别指望 gap） */
+  .meta { display: flex; flex-direction: column; min-width: 0; }
+  .name { font-size: 26px; font-weight: bold; color: #111827; margin-bottom: 6px; }
+  .line2 { font-size: 19px; color: #6b7280; margin-bottom: 5px; }
+  .url { font-size: 19px; color: #2563eb; }
+
+  .empty { font-size: 22px; color: #6b7280; margin: 8px 0; }
+  .foot { margin-top: 18px; font-size: 18px; color: #9ca3af; text-align: right; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <p class="title">本群订阅的画师</p>
+    <p class="sub">共 {{ count }} 位</p>
+    {% if items %}
+      {% for it in items %}
+      <div class="row">
+        <span class="idx">{{ it.index }}.</span>
+        {% if it.avatar_uri %}
+        <img class="avatar" src="{{ it.avatar_uri }}" alt="">
+        {% else %}
+        <span class="avatar ph">{{ it.author_name[0] }}</span>
+        {% endif %}
+        <span class="meta">
+          <span class="name">{{ it.author_name }}</span>
+          <span class="line2">ID {{ it.author_id }} · 订阅于 {{ it.subscribed_at }}</span>
+          <span class="url">{{ it.author_url }}</span>
+        </span>
+      </div>
+      {% endfor %}
+      {% if truncated %}
+      <p class="empty">另有 {{ truncated }} 位未显示</p>
+      {% endif %}
+    {% else %}
+      <p class="empty">本群还没有订阅任何画师</p>
+    {% endif %}
+    <p class="foot">群号 {{ group_id }}</p>
+  </div>
+</body>
+</html>
