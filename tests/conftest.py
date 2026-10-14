@@ -43,6 +43,19 @@ if _REACTION_SRC.is_dir():
     if str(_REACTION_SRC) not in sys.path:
         sys.path.append(str(_REACTION_SRC))
 
+# ── 合并转发库（可选依赖）的本地解析 ──────────────────────────────
+#
+# 同一个道理：`>3 页走合并转发` 的接线一旦在「库其实没装上」的环境里跑，
+# 插件会静默退到「多图一条」的降级路径 —— 于是那条分支的断言**假绿**。
+# 所以也把兄弟仓挂上 sys.path；找不到就什么都不做
+# （`tests/test_merge_forward_wiring.py` 用 importorskip 跳过，不会把整仓弄红）。
+_MERGE_FORWARD_SRC = Path(__file__).resolve().parents[2] / "nonebot-plugin-merge-forward" / "src" / "plugins"
+if _MERGE_FORWARD_SRC.is_dir():
+    import sys
+
+    if str(_MERGE_FORWARD_SRC) not in sys.path:
+        sys.path.append(str(_MERGE_FORWARD_SRC))
+
 
 class FakeJsonDict(dict):
     """复刻 pixivpy3 `JsonDict` 的**关键语义**：缺失的键返回 `None`，**不抛异常**。
