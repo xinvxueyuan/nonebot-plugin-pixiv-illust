@@ -129,7 +129,7 @@ uv run ruff format --check .
 
 ## 许可证与相关仓库
 
-MIT —— `pyproject.toml` 的 `license` 字段声明 MIT；**仓库未附 `LICENSE` 文件**，以 `pyproject.toml` 为准。
+MIT —— 全文见 [`LICENSE`](LICENSE)；`pyproject.toml` 的 `license` 字段同为 MIT。
 
 - 宿主仓库：[xinvxueyuan/qbot](https://github.com/xinvxueyuan/qbot)（以 git 子模块挂在 `vendor/nonebot-plugin-pixiv-illust`）
 - [xinvxueyuan/nonebot-plugin-merge-forward](https://github.com/xinvxueyuan/nonebot-plugin-merge-forward)：剩余页 > 3 张时用它合并转发，缺失 / 失败自动降级为多图一条

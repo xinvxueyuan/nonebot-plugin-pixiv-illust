@@ -16,6 +16,11 @@ dependencies = [
     "pillow>=12.0.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/xinvxueyuan/nonebot-plugin-pixiv-illust"
+Repository = "https://github.com/xinvxueyuan/nonebot-plugin-pixiv-illust"
+Issues = "https://github.com/xinvxueyuan/nonebot-plugin-pixiv-illust/issues"
+
 [dependency-groups]
 dev = [
     "pytest>=8.0.0",
