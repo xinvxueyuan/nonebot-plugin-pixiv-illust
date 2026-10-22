@@ -2,12 +2,17 @@
 
 pixiv 插画/漫画订阅推送插件（NoneBot2 / OneBot V11）：按群订阅画师新作自动推送（含多页插画与漫画多页），R18 可打码。
 
+[![Python](https://img.shields.io/badge/python-3.10--3.13-blue)](pyproject.toml)
+[![License](https://img.shields.io/badge/license-MIT-blue)](pyproject.toml)
+
+> **qbot 插件** · 宿主仓库：[xinvxueyuan/qbot](https://github.com/xinvxueyuan/qbot)
+
 > - 命令裸词触发（qbot 的 `COMMAND_START=[""]`）：`订阅插画` / `退订插画` / `插画订阅列表`。
 > - 订阅**按群隔离**；R18 有「推送 / 打码」两根轴 + 一个非轴开关，默认偏保守。
 > - 多页作品：文案 + 第 1 页一条消息；剩余页 **≤3 张直发多图、>3 张走合并转发**（集成 `nonebot-plugin-merge-forward`，库缺失自动降级为多图一条）。
 > - 只通过 GitHub Release 分发，不发布到 PyPI。
 
-## 功能
+## 功能特性
 
 - **新作推送**：按群订阅画师，定时轮询该作者的**插画 + 漫画**新作并推送到群；过滤不可见 / 仅 mypixiv 可见的作品。
 - **订阅播种**：订阅时取作者当前最新作品 ID 作为基线，**历史作品不会被一次性补推**。
@@ -22,17 +27,32 @@ pixiv 插画/漫画订阅推送插件（NoneBot2 / OneBot V11）：按群订阅�
 - **权限闸门**：命令与被动 hook 先过群白名单，再过管理员闸门；被拒会明确回文案（不用 NoneBot 的静默 `permission`）。
 - 订阅数据按 `(group_id, author_id)` 存在 SQLite（`localstore` 数据目录），各群之间不共享。
 
-## 命令
+## 安装
 
-默认**所有人可用**（`PIXIV_ILLUST_ADMIN_ONLY=false`）；设为 `true` 后仅管理员（`PIXIV_ILLUST_ADMIN_IDS`，名单为空则回退 NoneBot 全局 `SUPERUSERS`）可用。
+### 依赖
 
-| 命令 | 别名 | 说明 |
-|---|---|---|
-| `订阅插画 <画师id>` | — | 仅群聊。本群订阅该画师新作（订阅时播种基线 + 顺带存画师名/头像） |
-| `退订插画 <画师id>` | — | 仅群聊。取消订阅 |
-| `插画订阅列表` | — | 仅群聊。查看本群订阅（渲染成图片，失败回退纯文本） |
+- 运行依赖：`nonebot2 >= 2.5.0`、`nonebot-adapter-onebot >= 2.4.0`、`nonebot-plugin-apscheduler >= 0.5.0`、`nonebot-plugin-localstore >= 0.7.4`、`nonebot-plugin-htmlkit >= 0.1.0rc5`、`pixivpy3 >= 3.7.5`、`httpx >= 0.28.0`、`pillow >= 12.0.0`；Python `>=3.10,<3.14`。
+- 可选依赖（缺失只降级，不影响插件加载）：
+  - `nonebot-plugin-htmlkit` 加载失败 → 「插画订阅列表」回退纯文本；
+  - `nonebot-plugin-message-reaction`（表态）没装 → 没有表情反馈；
+  - `nonebot-plugin-merge-forward`（合并转发）没装 → 多页作品不再合并转发、退化为多图一条。
+  - 后两个库都不在 PyPI，由宿主以 git 子模块提供。
+- 前置条件：
+  1. pixiv 账号的「国・地域」设为**日本**（否则 R18 内容受地区限制；本服务器出口在 US，尤其要注意）
+  2. pixiv 账号打开「显示 R18 内容」
+  3. 服务器能访问 `127.0.0.1:1081` 代理（pixiv 全域名国内直连不通）
+  4. 系统有 CJK 字体（渲染订阅列表用；Debian 上装 `fonts-noto-cjk`）
 
-参数支持直接粘贴 pixiv 链接（`pixiv.net/artworks/123`、`pixiv.net/member_illust.php?...&illust_id=123`、`pixiv.net/i/123`）。
+### 接入宿主
+
+- 安装（宿主以 git 子模块引入）：
+
+```bash
+git submodule add -b main https://github.com/xinvxueyuan/nonebot-plugin-pixiv-illust.git vendor/nonebot-plugin-pixiv-illust
+git -C vendor/nonebot-plugin-pixiv-illust checkout <钉定 SHA>
+```
+
+- 宿主 `[tool.nonebot] plugin_dirs` 加一行 `vendor/nonebot-plugin-pixiv-illust/src/plugins`
 
 ## 配置
 
@@ -67,7 +87,19 @@ pixiv 插画/漫画订阅推送插件（NoneBot2 / OneBot V11）：按群订阅�
 - 被动 URL hook 是**用户主动贴链接**触发的，照发；R18 图按轴 2 打码。
 - 想看未打码的 R18：把 `PIXIV_ILLUST_BLUR_R18` 设为 `false` —— 这是刻意的显式动作，默认模糊。
 
-## 多页作品的推送形态
+## 使用 / 命令
+
+默认**所有人可用**（`PIXIV_ILLUST_ADMIN_ONLY=false`）；设为 `true` 后仅管理员（`PIXIV_ILLUST_ADMIN_IDS`，名单为空则回退 NoneBot 全局 `SUPERUSERS`）可用。
+
+| 命令 | 别名 | 说明 |
+|---|---|---|
+| `订阅插画 <画师id>` | — | 仅群聊。本群订阅该画师新作（订阅时播种基线 + 顺带存画师名/头像） |
+| `退订插画 <画师id>` | — | 仅群聊。取消订阅 |
+| `插画订阅列表` | — | 仅群聊。查看本群订阅（渲染成图片，失败回退纯文本） |
+
+参数支持直接粘贴 pixiv 链接（`pixiv.net/artworks/123`、`pixiv.net/member_illust.php?...&illust_id=123`、`pixiv.net/i/123`）。
+
+### 多页作品的推送形态
 
 | 剩余页数（第 2..N 页） | 第二条消息 |
 |---|---|
@@ -76,29 +108,13 @@ pixiv 插画/漫画订阅推送插件（NoneBot2 / OneBot V11）：按群订阅�
 
 第 1 页永远跟文案在同一条消息里。`PIXIV_ILLUST_MAX_PAGES` 之外的页不发图，只在文案里写「共 X 页，本条发送前 N 页」，链接永远带。
 
-## 依赖与安装
+### 其他约定
 
-- 运行依赖：`nonebot2 >= 2.5.0`、`nonebot-adapter-onebot >= 2.4.0`、`nonebot-plugin-apscheduler >= 0.5.0`、`nonebot-plugin-localstore >= 0.7.4`、`nonebot-plugin-htmlkit >= 0.1.0rc5`、`pixivpy3 >= 3.7.5`、`httpx >= 0.28.0`、`pillow >= 12.0.0`；Python `>=3.10,<3.14`。
-- 可选依赖（缺失只降级，不影响插件加载）：
-  - `nonebot-plugin-htmlkit` 加载失败 → 「插画订阅列表」回退纯文本；
-  - `nonebot-plugin-message-reaction`（表态）没装 → 没有表情反馈；
-  - `nonebot-plugin-merge-forward`（合并转发）没装 → 多页作品不再合并转发、退化为多图一条。
-  - 后两个库都不在 PyPI，由宿主以 git 子模块提供。
-- 前置条件：
-  1. pixiv 账号的「国・地域」设为**日本**（否则 R18 内容受地区限制；本服务器出口在 US，尤其要注意）
-  2. pixiv 账号打开「显示 R18 内容」
-  3. 服务器能访问 `127.0.0.1:1081` 代理（pixiv 全域名国内直连不通）
-  4. 系统有 CJK 字体（渲染订阅列表用；Debian 上装 `fonts-noto-cjk`）
-- 安装（宿主以 git 子模块引入）：
+- **不引用**：回复不引用原消息，直接发。
+- **不共享**：订阅是**按群**隔离的，A 群的订阅不会推到 B 群。
+- **分发**：只通过 GitHub Release 发布版本，不发 PyPI。
 
-```bash
-git submodule add -b main https://github.com/xinvxueyuan/nonebot-plugin-pixiv-illust.git vendor/nonebot-plugin-pixiv-illust
-git -C vendor/nonebot-plugin-pixiv-illust checkout <钉定 SHA>
-```
-
-- 宿主 `[tool.nonebot] plugin_dirs` 加一行 `vendor/nonebot-plugin-pixiv-illust/src/plugins`
-
-## 测试与门禁
+## 开发与测试
 
 ```bash
 uv run python -m pytest tests/ -q
@@ -106,15 +122,16 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
+- 测试目录 `tests/` 覆盖 collect / client / policy / poller / render / store / handlers / urls 与接线（含 `test_wiring.py`、`test_reaction_wiring.py`、`test_merge_forward_wiring.py`、`test_smoke.py`）；`pyproject.toml` 里 `testpaths = ["tests"]`、`asyncio_mode = "auto"`、`pythonpath = ["src/plugins"]`。
 - 本机 Windows 注意：跑 pytest 前 `export PYTEST_ADDOPTS="--basetemp=$TMPDIR/pytest-x"`（默认临时目录 ACL 坑）；uv 命令建议套 `env -u UV_PYTHON -u UV_PROJECT_ENVIRONMENT -u SSL_CERT_FILE -u VIRTUAL_ENV -u PYTHONPATH`。
 - `scripts/smoke_plugin_load.py`：用真 NoneBot 驱动加载本插件、打印已注册命令与可选依赖降级状态（改动接线后先跑它）。
+- 门禁：`ruff`（`line-length = 120`、`target-version = "py310"`，显式 `select` 8 组规则）；本仓 `[tool.uv] package = false`，不构建发行包。
 
-## 其他约定
+## 许可证与相关仓库
 
-- **不引用**：回复不引用原消息，直接发。
-- **不共享**：订阅是**按群**隔离的，A 群的订阅不会推到 B 群。
-- **分发**：只通过 GitHub Release 发布版本，不发 PyPI。
+MIT —— `pyproject.toml` 的 `license` 字段声明 MIT；**仓库未附 `LICENSE` 文件**，以 `pyproject.toml` 为准。
 
-## 许可
-
-MIT（见 `pyproject.toml` 的 `license` 字段；仓库暂未附 `LICENSE` 文件）。
+- 宿主仓库：[xinvxueyuan/qbot](https://github.com/xinvxueyuan/qbot)（以 git 子模块挂在 `vendor/nonebot-plugin-pixiv-illust`）
+- [xinvxueyuan/nonebot-plugin-merge-forward](https://github.com/xinvxueyuan/nonebot-plugin-merge-forward)：剩余页 > 3 张时用它合并转发，缺失 / 失败自动降级为多图一条
+- [xinvxueyuan/nonebot-plugin-message-reaction](https://github.com/xinvxueyuan/nonebot-plugin-message-reaction)：慢操作「处理中 → 完成 / 失败」的表情反馈，缺失只是没有表情
+- `nonebot-plugin-htmlkit`：「插画订阅列表」出图依赖（失败回退纯文本）
